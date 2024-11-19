@@ -109,7 +109,7 @@ def parse_file(start_year, end_year, include_eclipses = False):
 		reader = csv.DictReader(csvfile)
 		entries = list(filter(is_fullmoon, reader))
 
-	print("\nFile parsed successfully\n")
+	print("\nFile parsed successfully...\n")
 	return entries
 
 
@@ -155,131 +155,140 @@ def main():
 	entries = parse_file(start_year, end_year, True)
 	entries_length = len(entries)
 
+    # Open the output file in write mode
+	with open("hijri_calendar_observed_output.txt", "w") as output_file:
+		def get_muharram_position(index, year):
+			"""
+				This checks if the given year contains a blue moon (or 13 full moons) and returns
+				the position (1) if the blue moon occurs in the months 1 - 6 inclusive, 13 if in the 
+				months 7 - 12 inclusive. Otherwise, if there is no Muharram month it will return -1.
 
-	def get_muharram_position(index, year):
-		"""
-			This checks if the given year contains a blue moon (or 13 full moons) and returns
-			the position (1) if the blue moon occurs in the months 1 - 6 inclusive, 13 if in the 
-			months 7 - 12 inclusive. Otherwise, if there is no Muharram month it will return -1.
+				Note: This is defined within the function 'main' so that it can access the variable 'entries'.
+					It is not ideal to nest this function here but it is less ideal to pass in the 
+					large list 'entries'. It significantly slows down the program.
+			"""
+			_month_count = 1
+			_index = index
 
-			Note: This is defined within the function 'main' so that it can access the variable 'entries'.
-				It is not ideal to nest this function here but it is less ideal to pass in the 
-				large list 'entries'. It significantly slows down the program.
-		"""
-		_month_count = 1
-		_index = index
-
-		while(_month_count < 14):
-			try:
-				_start_month = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).month
-				_end_month = datetime.strptime(entries[_index + 1]["datetime"], DATEFORMAT).month
-				_year = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).year
-			
-			except IndexError:
-				return -1
-
-			if _year > year:
-				return -1
-
-			if _start_month == _end_month:
-				return 1 if _month_count <= 6 else 13
-
-			_month_count += 1
-			_index += 1
-
-		return -1	
-
-
-	'''	--------- VARIABLES ------------ '''
-
-	# hijri_month_lens = {29: 0, 30: 0}
-	hijri_year = 1  					# Hirji year
-	month_count = 0 					# Which month we're in, look at 'HIJRI_MONTHS'
-	muharram_position = -1  			# The position the month 'Muharram' falls into
-	
-	for i in range(entries_length):
-
-		# If loop just started set start of month to Gregorian full moon date.
-		start_month = datetime.strptime(entries[i]["datetime"], DATEFORMAT) + timedelta(days = 1)
-		end_month = datetime.strptime(entries[i + 1]["datetime"], DATEFORMAT)
-
-		start_month.replace(hour = 0, minute = 0, second = 0)
-		end_month.replace(hour = 0, minute = 0, second = 0)
-
-		# Get start and end of calendar month from Gregorian (True i.e. observed Full Moon)
-		gregorian_start_month = datetime.strptime(entries[i]["datetime"], DATEFORMAT)
-		gregorian_end_month = datetime.strptime(entries[i + 1]["datetime"], DATEFORMAT)
-
-
-		# Hijri Calendar only exists at and after 622 AD
-		if start_month.year < HIRJI_START_YEAR:
-			continue;
-
-		# Add month count
-		month_count += 1
-
-		
-		# -------------------------------- TIMEZONE ------------------------------------
-		# Assign UTC to naive datetime objects
-		start_month.replace(tzinfo = pytz.utc)
-		end_month.replace(tzinfo = pytz.utc)
-		gregorian_start_month.replace(tzinfo = pytz.utc)
-		gregorian_end_month.replace(tzinfo = pytz.utc)
-
-		# Convert to MECCA time zone
-		start_month = start_month.astimezone(MECCA_TIMEZONE)
-		end_month = end_month.astimezone(MECCA_TIMEZONE)
-		gregorian_start_month = gregorian_start_month.astimezone(MECCA_TIMEZONE)
-		gregorian_end_month = gregorian_end_month.astimezone(MECCA_TIMEZONE)
-
-		
-
-		# Length of hirji month
-		hijri_month_len = round((end_month - start_month).total_seconds() / (24* 3600)) + 1
-		# hijri_month_lens[hijri_month_len] += 1
-
-		# Print Hijri Month
-		print(f"{HIJRI_MONTHS[month_count]} {hijri_month_len}")
-
-		# Print the Gregorian date
-		print(f"\tFull Moon Observed: "+ 
-			f"{gregorian_start_month.strftime('%B %d, %Y')} - {gregorian_end_month.strftime('%B %d, %Y')}")
-
-		# Print the Hirji Calendar in Gregorian
-		print(f"\tHijri (Gregorian) \t{start_month.strftime('%B %d, %Y')} - {end_month.strftime('%B %d, %Y')}")
-
-		# Print Hijri calendar
-		print(f"\tHijri (Natural): \t{HIJRI_MONTHS[month_count]} {1}, {hijri_year} - "
-				+ f"{HIJRI_MONTHS[month_count]} {hijri_month_len}, {hijri_year} \n")
-
-
-		# -------- END OF YEAR ---------
-		if (end_month.month == 1 and start_month.month != 1) or month_count == 13:
-
-			upcoming_year = end_month.year
-
-			# Exit if last year
-			if upcoming_year == end_year: 	
-				break;
-
-			# print(f"Number of months with 29 days: {hijri_month_lens[29]}, Number of months with 30 days: {hijri_month_lens[30]}")
-
-			print(f"\n------------------------- GREGORIAN YEAR: {upcoming_year}, HIRJI YEAR: {hijri_year + 1} -----------------------\n")
+			while(_month_count < 14):
+				try:
+					_start_month = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).month
+					_end_month = datetime.strptime(entries[_index + 1]["datetime"], DATEFORMAT).month
+					_year = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).year
 				
-			# hijri_month_lens = {29: 0, 30: 0}
-			hijri_year += 1
-			month_count = 0
-			muharram_position = get_muharram_position(i, upcoming_year)
+				except IndexError:
+					return -1
 
-			# If Muharram is beginning of year shift all the months down
-			if muharram_position == 1:
-				month_count = -1
+				if _year > year:
+					return -1
 
-			# For debugging purposes
-			# print(f"Muharram position:", muharram_position); print()
+				if _start_month == _end_month:
+					return 1 if _month_count <= 6 else 13
+
+				_month_count += 1
+				_index += 1
+
+			return -1	
 
 
-	print("\n[SUCCESS] Computing Hijri Calendar (Observed)\n")
+		'''	--------- VARIABLES ------------ '''
+
+		# hijri_month_lens = {29: 0, 30: 0}
+		hijri_year = 1  					# Hirji year
+		month_count = 0 					# Which month we're in, look at 'HIJRI_MONTHS'
+		muharram_position = -1  			# The position the month 'Muharram' falls into
+		
+		for i in range(entries_length):
+
+			# If loop just started set start of month to Gregorian full moon date.
+			start_month = datetime.strptime(entries[i]["datetime"], DATEFORMAT) + timedelta(days = 1)
+			end_month = datetime.strptime(entries[i + 1]["datetime"], DATEFORMAT)
+
+			start_month.replace(hour = 0, minute = 0, second = 0)
+			end_month.replace(hour = 0, minute = 0, second = 0)
+
+			# Get start and end of calendar month from Gregorian (True i.e. observed Full Moon)
+			gregorian_start_month = datetime.strptime(entries[i]["datetime"], DATEFORMAT)
+			gregorian_end_month = datetime.strptime(entries[i + 1]["datetime"], DATEFORMAT)
+
+
+			# Hijri Calendar only exists at and after 622 AD
+			if start_month.year < HIRJI_START_YEAR:
+				continue;
+
+			# Add month count
+			month_count += 1
+
+			
+			# -------------------------------- TIMEZONE ------------------------------------
+			# Assign UTC to naive datetime objects
+			start_month = start_month.replace(tzinfo = pytz.utc)
+			end_month = end_month.replace(tzinfo = pytz.utc)
+			gregorian_start_month = gregorian_start_month.replace(tzinfo = pytz.utc)
+			gregorian_end_month = gregorian_end_month.replace(tzinfo = pytz.utc)
+
+			# Convert to MECCA time zone
+			start_month = start_month.astimezone(MECCA_TIMEZONE)
+			end_month = end_month.astimezone(MECCA_TIMEZONE)
+			gregorian_start_month = gregorian_start_month.astimezone(MECCA_TIMEZONE)
+			gregorian_end_month = gregorian_end_month.astimezone(MECCA_TIMEZONE)
+
+			
+
+			# Length of hirji month
+			hijri_month_len = round((end_month - start_month).total_seconds() / (24* 3600)) + 1
+			# hijri_month_lens[hijri_month_len] += 1
+
+			# Print Hijri Month
+			output_file.write(f"{HIJRI_MONTHS[month_count]} {hijri_month_len}")
+			output_file.write("\n")
+
+
+			# Print the Gregorian date
+			output_file.write(f"\tFull Moon Observed: "+ 
+				f"{gregorian_start_month.strftime('%B %d, %Y')} - {gregorian_end_month.strftime('%B %d, %Y')}")
+			output_file.write("\n")
+
+			# Print the Hirji Calendar in Gregorian
+			output_file.write(f"\tHijri (Gregorian) \t{start_month.strftime('%B %d, %Y')} - {end_month.strftime('%B %d, %Y')}")
+			output_file.write("\n")
+
+			# Print Hijri calendar
+			output_file.write(f"\tHijri (Natural): \t{HIJRI_MONTHS[month_count]} {1}, {hijri_year} - "
+					+ f"{HIJRI_MONTHS[month_count]} {hijri_month_len}, {hijri_year} \n")
+			output_file.write("\n")
+
+
+			# -------- END OF YEAR ---------
+			if (end_month.month == 1 and start_month.month != 1) or month_count == 13:
+
+				upcoming_year = end_month.year
+
+				# Exit if last year
+				if upcoming_year == end_year: 	
+					break;
+
+				# print(f"Number of months with 29 days: {hijri_month_lens[29]}, Number of months with 30 days: {hijri_month_lens[30]}")
+
+				output_file.write(f"\n------------------------- GREGORIAN YEAR: {upcoming_year}, HIRJI YEAR: {hijri_year + 1} -----------------------\n")
+				output_file.write("\n")
+			
+				# hijri_month_lens = {29: 0, 30: 0}
+				hijri_year += 1
+				month_count = 0
+				muharram_position = get_muharram_position(i, upcoming_year)
+
+				# If Muharram is beginning of year shift all the months down
+				if muharram_position == 1:
+					month_count = -1
+
+				# For debugging purposes
+				# print(f"Muharram position:", muharram_position); print()
+
+
+		output_file.write("\n[SUCCESS] Computing Hijri Calendar (Observed)\n")
+		output_file.write("\n")
+
 
 
 
