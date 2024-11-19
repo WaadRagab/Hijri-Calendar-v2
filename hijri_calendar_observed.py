@@ -154,50 +154,50 @@ def main():
 	end_year = 4000
 	entries = parse_file(start_year, end_year, True)
 	entries_length = len(entries)
+	
+	def get_muharram_position(index, year):
+		"""
+			This checks if the given year contains a blue moon (or 13 full moons) and returns
+			the position (1) if the blue moon occurs in the months 1 - 6 inclusive, 13 if in the 
+			months 7 - 12 inclusive. Otherwise, if there is no Muharram month it will return -1.
+
+			Note: This is defined within the function 'main' so that it can access the variable 'entries'.
+				It is not ideal to nest this function here but it is less ideal to pass in the 
+				large list 'entries'. It significantly slows down the program.
+		"""
+		_month_count = 1
+		_index = index
+
+		while(_month_count < 14):
+			try:
+				_start_month = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).month
+				_end_month = datetime.strptime(entries[_index + 1]["datetime"], DATEFORMAT).month
+				_year = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).year
+			
+			except IndexError:
+				return -1
+
+			if _year > year:
+				return -1
+
+			if _start_month == _end_month:
+				return 1 if _month_count <= 6 else 13
+
+			_month_count += 1
+			_index += 1
+
+		return -1	
+
+
+	'''	--------- VARIABLES ------------ '''
+
+	# hijri_month_lens = {29: 0, 30: 0}
+	hijri_year = 1  					# Hirji year
+	month_count = 0 					# Which month we're in, look at 'HIJRI_MONTHS'
+	muharram_position = -1  			# The position the month 'Muharram' falls into
 
     # Open the output file in write mode
-	with open("hijri_calendar_observed_output.txt", "w") as output_file:
-		def get_muharram_position(index, year):
-			"""
-				This checks if the given year contains a blue moon (or 13 full moons) and returns
-				the position (1) if the blue moon occurs in the months 1 - 6 inclusive, 13 if in the 
-				months 7 - 12 inclusive. Otherwise, if there is no Muharram month it will return -1.
-
-				Note: This is defined within the function 'main' so that it can access the variable 'entries'.
-					It is not ideal to nest this function here but it is less ideal to pass in the 
-					large list 'entries'. It significantly slows down the program.
-			"""
-			_month_count = 1
-			_index = index
-
-			while(_month_count < 14):
-				try:
-					_start_month = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).month
-					_end_month = datetime.strptime(entries[_index + 1]["datetime"], DATEFORMAT).month
-					_year = datetime.strptime(entries[_index]["datetime"], DATEFORMAT).year
-				
-				except IndexError:
-					return -1
-
-				if _year > year:
-					return -1
-
-				if _start_month == _end_month:
-					return 1 if _month_count <= 6 else 13
-
-				_month_count += 1
-				_index += 1
-
-			return -1	
-
-
-		'''	--------- VARIABLES ------------ '''
-
-		# hijri_month_lens = {29: 0, 30: 0}
-		hijri_year = 1  					# Hirji year
-		month_count = 0 					# Which month we're in, look at 'HIJRI_MONTHS'
-		muharram_position = -1  			# The position the month 'Muharram' falls into
-		
+	with open("hijri_calendar_observed_output.txt", "w") as output_file:	
 		for i in range(entries_length):
 
 			# If loop just started set start of month to Gregorian full moon date.
@@ -288,6 +288,8 @@ def main():
 
 		output_file.write("\n[SUCCESS] Computing Hijri Calendar (Observed)\n")
 		output_file.write("\n")
+		print("The results are now available in a text file named hijri_calendar_observed_output.")
+		print("\n")
 
 
 

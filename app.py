@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify, Response
-from hijri_calendar_consistent import parse_file_with_eclipses, calculate_hijri_calendar
+from flask import Flask, request,Response
+from hijri_calendar_consistent import calculate_hijri_calendar
 
 app = Flask(__name__)
 hijri_calendar = calculate_hijri_calendar()
